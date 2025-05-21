@@ -5,8 +5,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 // Your screen imports
-import 'package:wention/screen/Login_screen.dart';
 import 'package:wention/screen/Singup_screen.dart';
+import 'package:wention/screen/SingIn_screen.dart';
 import 'package:wention/screen/home_screen.dart';
 import 'package:wention/screen/verification.dart';
 
@@ -77,7 +77,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       initialRoute: initialRoute,
 
       getPages: [
-        GetPage(name: '/login', page: () => const LoginScreen()),
+        GetPage(name: '/login', page: () => const SignInScreen()),
         GetPage(name: '/signup', page: () => const SignupScreen()),
         GetPage(name: '/verify', page: () => const VerifyEmailScreen()),
         GetPage(name: '/home', page: () => const HomeScreen()),
