@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "694106998233",
+    "project_id": "meal-1d4aa",
+    "storage_bucket": "meal-1d4aa.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:694106998233:android:97be6a831c0f085a3745c8",
+        "android_client_info": {
+          "package_name": "com.example.wention"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "694106998233-73acog1cnin43lfort6ku4vhvq54baj9.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.wention",
+            "certificate_hash": "c3a1dedf9e024d827bf3223788b3292dffa00cdb"
+          }
+        },
+        {
+          "client_id": "694106998233-ctc8hvoro6kkbn17kamjkqdecgodrpt4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAefg9mtGenvXYpq6kWYwWl8jhr08YHmUE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "694106998233-ctc8hvoro6kkbn17kamjkqdecgodrpt4.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
