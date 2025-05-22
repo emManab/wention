@@ -3,12 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
-// Your screen imports
-import 'package:wention/screen/Singup_screen.dart';
 import 'package:wention/screen/SingIn_screen.dart';
+import 'package:wention/screen/Singup_screen.dart';
 import 'package:wention/screen/home_screen.dart';
-import 'package:wention/screen/verification.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,14 +29,12 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
   @override
   void didChangePlatformBrightness() {
-    final brightness =
-        WidgetsBinding.instance.platformDispatcher.platformBrightness;
+    final brightness = WidgetsBinding.instance.platformDispatcher.platformBrightness;
     _setSystemUIOverlayStyle(brightness);
   }
 
   void _setSystemUIOverlayStyle(Brightness brightness) {
     final isDark = brightness == Brightness.dark;
-
     SystemChrome.setSystemUIOverlayStyle(
       SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -52,8 +47,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    final brightness =
-        WidgetsBinding.instance.platformDispatcher.platformBrightness;
+    final brightness = WidgetsBinding.instance.platformDispatcher.platformBrightness;
     _setSystemUIOverlayStyle(brightness);
 
     final user = FirebaseAuth.instance.currentUser;
@@ -62,7 +56,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     if (user == null) {
       initialRoute = '/login';
     } else if (!user.emailVerified) {
-      initialRoute = '/verify';
+      initialRoute = '/signup'; // If email not verified, go to signup/verification
     } else {
       initialRoute = '/home';
     }
@@ -73,13 +67,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       theme: ThemeData.light(),
       darkTheme: ThemeData.dark(),
       themeMode: ThemeMode.system,
-
       initialRoute: initialRoute,
-
       getPages: [
         GetPage(name: '/login', page: () => const SignInScreen()),
         GetPage(name: '/signup', page: () => const SignupScreen()),
-        GetPage(name: '/verify', page: () => const VerifyEmailScreen()),
         GetPage(name: '/home', page: () => const HomeScreen()),
       ],
     );

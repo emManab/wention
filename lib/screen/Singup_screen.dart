@@ -1,9 +1,9 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:wention/screen/SingIn_screen.dart';
 import 'package:wention/screen/verification.dart';
+
+import '../widgets/snackbar.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -16,7 +16,6 @@ class _SignupScreenState extends State<SignupScreen> {
   final nameController = TextEditingController();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
-  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   bool isPasswordVisible = false;
   bool nameError = false;
@@ -27,58 +26,6 @@ class _SignupScreenState extends State<SignupScreen> {
   bool isValidEmail(String email) {
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w]{2,4}$');
     return emailRegex.hasMatch(email);
-  }
-
-  void showCustomSnackBar({required String message, required bool success}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        content: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: success ? Colors.green.shade100 : Colors.red.shade100,
-            border: Border.all(
-              color: success ? Colors.green : Colors.red,
-              width: 2,
-            ),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                success ? Icons.check_circle : Icons.cancel,
-                color: success ? Colors.green : Colors.red,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      success ? "SUCCESS!" : "ERROR!",
-                      style: TextStyle(
-                        color: success ? Colors.green : Colors.red,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    Text(
-                      message,
-                      style: const TextStyle(
-                        color: Colors.black87,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   Future<void> onLogin() async {
@@ -94,64 +41,37 @@ class _SignupScreenState extends State<SignupScreen> {
 
     if (nameError || emailError || passwordError) {
       showCustomSnackBar(
-          message: "Please correct the highlighted fields", success: false);
+          context: context,message: "Please correct the highlighted fields", success: false);
       return;
     }
 
+    setState(() => isLoading = true);
+
     try {
-      setState(() => isLoading = true);
-
-      UserCredential userCred = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      await userCred.user!.updateDisplayName(name);
-
-      if (!userCred.user!.emailVerified) {
-        await userCred.user!.sendEmailVerification();
-      }
-
+      // Skip Firebase signup here
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => const VerifyEmailScreen()),
+        MaterialPageRoute(
+          builder: (_) => OtpVerificationScreen(
+            email: email,
+            password: password,
+          ),
+        ),
       );
 
       showCustomSnackBar(
-        message: "Sign-up successful! Please verify your email.",
+        message: "OTP sent successfully. Please verify.",
         success: true,
+        context: context,
       );
     } catch (e) {
       showCustomSnackBar(
-        message: "Sign-up failed: ${e.toString()}",
+        message: "Something went wrong: ${e.toString()}",
         success: false,
+        context: context,
       );
     } finally {
       setState(() => isLoading = false);
-    }
-  }
-
-  Future<void> onGoogleSignIn() async {
-    try {
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-      if (googleUser == null) return;
-
-      final GoogleSignInAuthentication googleAuth =
-      await googleUser.authentication;
-      final AuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      await _auth.signInWithCredential(credential);
-      showCustomSnackBar(
-        message: "Google Sign-In successful",
-        success: true,
-      );
-    } catch (e) {
-      showCustomSnackBar(
-        message: "Google Sign-in failed: ${e.toString()}",
-        success: false,
-      );
     }
   }
 
@@ -252,35 +172,6 @@ class _SignupScreenState extends State<SignupScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            Text("Or",
-                style: TextStyle(
-                    color: isDark ? Colors.white54 : Colors.black54)),
-            const SizedBox(height: 16),
-            OutlinedButton(
-              onPressed: onGoogleSignIn,
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(
-                    color: isDark ? Colors.white24 : Colors.black12),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Image.asset('assets/icons/google.png', height: 24, width: 24),
-                  const SizedBox(width: 12),
-                  Text(
-                    "Continue with Google",
-                    style: TextStyle(
-                      color: isDark ? Colors.white : Colors.black,
-                      fontSize: 16,
-                    ),
-                  )
-                ],
-              ),
-            ),
             const SizedBox(height: 24),
             Center(
               child: RichText(

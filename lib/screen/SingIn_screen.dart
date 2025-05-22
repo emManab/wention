@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
-import 'Singup_screen.dart'; // Make sure this file exists
+import '../widgets/snackbar.dart';
+import 'Singup_screen.dart'; // Ensure this exists
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -18,6 +19,7 @@ class _SignInScreenState extends State<SignInScreen> {
   bool isPasswordVisible = false;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
+
   Future<void> onSignIn() async {
     try {
       final email = emailController.text.trim();
@@ -28,40 +30,13 @@ class _SignInScreenState extends State<SignInScreen> {
         password: password,
       );
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Sign-in successful")),
-      );
+      showCustomSnackBar(message: "Sign-in successful", success: true,context: context,);
+      Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Sign-in failed: ${e.toString()}")),
-      );
+      showCustomSnackBar(message: "Sign-in failed: ${e.toString()}", success: false,context: context,);
     }
   }
 
-  Future<void> onGoogleSignIn() async {
-    try {
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-      if (googleUser == null) return;
-
-      final GoogleSignInAuthentication googleAuth =
-      await googleUser.authentication;
-
-      final AuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      await _auth.signInWithCredential(credential);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Google Sign-In successful")),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Google Sign-In failed: ${e.toString()}")),
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -99,14 +74,11 @@ class _SignInScreenState extends State<SignInScreen> {
                 const SizedBox(height: 40),
                 TextField(
                   controller: emailController,
-                  style: TextStyle(
-                      color: isDark ? Colors.white : Colors.black),
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black),
                   decoration: InputDecoration(
-                    prefixIcon: Icon(Icons.email,
-                        color: isDark ? Colors.white54 : Colors.grey),
+                    prefixIcon: Icon(Icons.email, color: isDark ? Colors.white54 : Colors.grey),
                     hintText: 'Enter your email',
-                    hintStyle: TextStyle(
-                        color: isDark ? Colors.white54 : Colors.grey),
+                    hintStyle: TextStyle(color: isDark ? Colors.white54 : Colors.grey),
                     filled: true,
                     fillColor: isDark ? Colors.white10 : Colors.white,
                     border: OutlineInputBorder(
@@ -119,14 +91,11 @@ class _SignInScreenState extends State<SignInScreen> {
                 TextField(
                   controller: passwordController,
                   obscureText: !isPasswordVisible,
-                  style: TextStyle(
-                      color: isDark ? Colors.white : Colors.black),
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black),
                   decoration: InputDecoration(
-                    prefixIcon: Icon(Icons.lock,
-                        color: isDark ? Colors.white54 : Colors.grey),
+                    prefixIcon: Icon(Icons.lock, color: isDark ? Colors.white54 : Colors.grey),
                     hintText: 'Enter your password',
-                    hintStyle: TextStyle(
-                        color: isDark ? Colors.white54 : Colors.grey),
+                    hintStyle: TextStyle(color: isDark ? Colors.white54 : Colors.grey),
                     filled: true,
                     fillColor: isDark ? Colors.white10 : Colors.white,
                     border: OutlineInputBorder(
@@ -135,9 +104,7 @@ class _SignInScreenState extends State<SignInScreen> {
                     ),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        isPasswordVisible
-                            ? Icons.visibility
-                            : Icons.visibility_off,
+                        isPasswordVisible ? Icons.visibility : Icons.visibility_off,
                         color: isDark ? Colors.white54 : Colors.grey,
                       ),
                       onPressed: () {
@@ -167,46 +134,6 @@ class _SignInScreenState extends State<SignInScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                Text(
-                  "Or",
-                  style: TextStyle(
-                    color: isDark ? Colors.white54 : Colors.black54,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    onPressed: onGoogleSignIn,
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(
-                          color: isDark ? Colors.white24 : Colors.black12),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Image.asset(
-                          'assets/icons/google.png',
-                          height: 24,
-                          width: 24,
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          "Continue with Google",
-                          style: TextStyle(
-                            color: isDark ? Colors.white : Colors.black,
-                            fontSize: 16,
-                          ),
-                        )
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
                 Center(
                   child: RichText(
                     text: TextSpan(
@@ -225,8 +152,7 @@ class _SignInScreenState extends State<SignInScreen> {
                             ..onTap = () {
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(
-                                    builder: (_) => const SignupScreen()),
+                                MaterialPageRoute(builder: (_) => const SignupScreen()),
                               );
                             },
                         ),

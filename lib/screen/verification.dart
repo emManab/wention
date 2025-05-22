@@ -1,77 +1,104 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:email_otp/email_otp.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-class VerifyEmailScreen extends StatefulWidget {
-  const VerifyEmailScreen({super.key});
+import 'home_screen.dart'; // make sure this path is correct for your project
+
+class OtpVerificationScreen extends StatefulWidget {
+  final String email;
+  final String password;
+  final String? name;
+
+  const OtpVerificationScreen({
+    super.key,
+    required this.email,
+    required this.password,
+    this.name,
+  });
 
   @override
-  State<VerifyEmailScreen> createState() => _VerifyEmailScreenState();
+  State<OtpVerificationScreen> createState() => _OtpVerificationScreenState();
 }
 
-class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
-  final FirebaseAuth auth = FirebaseAuth.instance;
-  bool isEmailVerified = false;
+class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
+  final TextEditingController otpController = TextEditingController();
+  late final EmailOTP myOtp;
   bool isLoading = false;
-  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
-    _sendVerificationEmail();
-
-    // Auto-check email verification every 5 seconds
-    _timer = Timer.periodic(const Duration(seconds: 5), (timer) async {
-      await auth.currentUser?.reload();
-      if (auth.currentUser?.emailVerified == true) {
-        timer.cancel();
-        if (mounted) {
-          _showSnackBar("Email verified successfully!");
-          Navigator.pushReplacementNamed(context, '/home');
-        }
-      }
-    });
+    myOtp = EmailOTP();
+    _sendOtp();
   }
 
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
+  Future<void> _sendOtp() async {
+    myOtp.setConfig(
+      appEmail: 'wention@official.com', // must be verified in EmailOTP
+      appName: 'Wention',
+      userEmail: widget.email,
+      otpLength: 6,
+      otpType: OTPType.digitsOnly,
+    );
+
+    final sent = await myOtp.sendOTP();
+    _showSnackBar(
+      sent ? 'OTP has been sent to ${widget.email}' : 'Failed to send OTP',
+      isError: !sent,
+    );
   }
 
-  Future<void> _sendVerificationEmail() async {
-    final user = auth.currentUser;
-    if (user != null && !user.emailVerified) {
-      try {
-        await user.sendEmailVerification();
-        _showSnackBar("Verification email sent!");
-      } catch (e) {
-        _showSnackBar("Failed to send verification email.", isError: true);
-      }
-    }
-  }
-
-  Future<void> _checkVerification() async {
+  Future<void> _verifyOtp() async {
+    // show loader immediately
     setState(() => isLoading = true);
-    await auth.currentUser?.reload();
-    final user = auth.currentUser;
 
-    if (user != null && user.emailVerified) {
-      _showSnackBar("Email verified!");
-      Navigator.pushReplacementNamed(context, '/home');
-    } else {
-      _showSnackBar(
-        "Email not verified yet or link expired. Please check your inbox or resend.",
-        isError: true,
-      );
+    final isVerified = await myOtp.verifyOTP(
+      otp: otpController.text.trim(),
+    );
+
+    if (!isVerified) {
+      _showSnackBar('Invalid OTP', isError: true);
+      setState(() => isLoading = false);
+      return;
     }
 
-    setState(() => isLoading = false);
+    try {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+      );
+      // 1️⃣ Create the user in Firebase Auth
+      final UserCredential cred =
+      await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: widget.email,
+        password: widget.password,
+      );
+
+      // 2️⃣ Save additional details in Firestore
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(cred.user!.uid)
+          .set({
+        'uid': cred.user!.uid,
+        'email': widget.email,
+        'name': widget.name ?? '',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      // 3️⃣ Navigate to HomeScreen
+
+    } on FirebaseAuthException catch (e) {
+      _showSnackBar('Signup failed: ${e.message}', isError: true);
+    } finally {
+      if (mounted) setState(() => isLoading = false);
+    }
   }
 
   void _showSnackBar(String message, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
+        behavior: SnackBarBehavior.floating,
         backgroundColor: isError ? Colors.red : Colors.green,
         content: Row(
           children: [
@@ -83,7 +110,6 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
             Expanded(child: Text(message)),
           ],
         ),
-        behavior: SnackBarBehavior.floating,
       ),
     );
   }
@@ -91,7 +117,6 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final email = auth.currentUser?.email ?? "";
 
     return Scaffold(
       backgroundColor: isDark ? Colors.black : Colors.white,
@@ -106,38 +131,45 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.mail_outline, size: 80),
+              const Icon(Icons.sms_outlined, size: 80),
               const SizedBox(height: 24),
               const Text(
-                "Verify your email address",
+                'Enter the OTP',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
               Text(
-                "We sent a verification link to:\n$email\n\nPlease check your inbox and click the link.",
+                'An OTP has been sent to:\n${widget.email}',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: isDark ? Colors.grey[400] : Colors.grey[700],
                 ),
               ),
-              const SizedBox(height: 12),
-              const Text(
-                "If the link expired or was used, tap the button below.",
+              const SizedBox(height: 24),
+              TextField(
+                controller: otpController,
+                keyboardType: TextInputType.number,
+                maxLength: 6,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 13),
+                decoration: InputDecoration(
+                  hintText: 'Enter 6-digit OTP',
+                  counterText: '',
+                  filled: true,
+                  fillColor: isDark ? Colors.grey[850] : Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
               ),
               const SizedBox(height: 24),
               ElevatedButton(
-                onPressed: isLoading ? null : _checkVerification,
+                onPressed: isLoading ? null : _verifyOtp,
                 style: ElevatedButton.styleFrom(
                   minimumSize: const Size(double.infinity, 48),
                   backgroundColor: isDark ? Colors.white : Colors.black,
                   foregroundColor: isDark ? Colors.black : Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
-                    side: BorderSide(
-                      color: isDark ? Colors.white : Colors.black,
-                    ),
                   ),
                 ),
                 child: isLoading
@@ -146,13 +178,13 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                   width: 20,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-                    : const Text("Continue"),
+                    : const Text('Verify'),
               ),
               const SizedBox(height: 16),
               TextButton(
-                onPressed: _sendVerificationEmail,
+                onPressed: isLoading ? null : _sendOtp,
                 child: const Text(
-                  "Resend Email Link",
+                  'Resend OTP',
                   style: TextStyle(
                     color: Colors.blueAccent,
                     fontWeight: FontWeight.w500,
@@ -160,14 +192,16 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                 ),
               ),
               TextButton(
-                onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
+                onPressed: isLoading
+                    ? null
+                    : () => Navigator.pushReplacementNamed(context, '/signup'),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: const [
                     Icon(Icons.arrow_back, size: 16, color: Colors.blueAccent),
                     SizedBox(width: 6),
                     Text(
-                      "Back to Login",
+                      'Back to Signup',
                       style: TextStyle(
                         color: Colors.blueAccent,
                         fontWeight: FontWeight.w500,
